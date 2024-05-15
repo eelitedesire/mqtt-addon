@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+        <title>Carbonoz SolarAutopilot</title>
+	    <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+	    <!----css3---->
+        <link rel="stylesheet" href="css/custom.css">
+		
+		
+		<!--google fonts -->
+	    <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+	
+	
+	   <!--google material icon-->
+      <link href="https://fonts.googleapis.com/css2?family=Material+Icons"rel="stylesheet">
+	  <style>
+        .table-container {
+            margin: 0 auto; 
+            width: 80%; 
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+    .chartMenu {
+      width: 100vw;
+      height: 40px;
+      background: #1A1A1A;
+      color: rgba(54, 162, 235, 1);
+    }
+    .chartMenu p {
+      padding: 10px;
+      font-size: 20px;
+    }
+    .chartCard {
+      width: 70vw;
+      height: calc(100vh - 40px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chartBox {
+      width: 700px;
+      padding: 20px;
+      border-radius: 20px;
+      border: solid 3px rgba(54, 162, 235, 1);
+      background: white;
+    }
+    </style>
+
+  </head>
+  <body>
+  
+
+
+<div class="wrapper">
+     
+	  <div class="body-overlay"></div>
+	 
+	 <!-------sidebar--design------------>
+	 
+	 <div id="sidebar">
+	    <div class="sidebar-header">
+		   <h3><img src="img/logo.png" class="img-fluid"/><span>Carbonoz </span></h3>
+		</div>
+		<ul class="list-unstyled component m-0">
+		  <li class="active">
+		  <a href="/status" class="dashboard"><i class="material-icons">dashboard</i>dashboard </a>
+		  </li>
+
+		  <li>
+			<a href="/charts" class="charts"><i class="material-icons">insert_chart</i>Charts</a>
+		</li>
+
+		<li>
+			<a href="/analytics" class="total-icon"><i class="material-icons">functions</i>Totals</a>
+		</li>
+		
+		
+		<li>
+			<a href="/messages" class="message-icon"><i class="material-icons">message</i>Message</a>
+		</li>
+		<li>
+			<a href="/automation" class="automation-icon"><i class="material-icons">build</i>Automation</a>
+		</li>
+		<li>
+		  <a href="/configuration" class="config-icon"><i class="material-icons">settings</i>Configuration</a>
+	  </li>
+		
+		
+		 
+		  
+	 </div>
+	 
+   <!-------sidebar--design- close----------->
+   
+   
+   
+      <!-------page-content start----------->
+   
+      <div id="content">
+	     
+		  <!------top-navbar-start-----------> 
+		     
+		  <div class="top-navbar">
+		     <div class="xd-topbar">
+			     <div class="row">
+				     <div class="col-2 col-md-1 col-lg-1 order-2 order-md-1 align-self-center">
+					    <div class="xp-menubar">
+						    <span class="material-icons text-white">signal_cellular_alt</span>
+						</div>
+					 </div>
+					 
+					 <div class="col-md-5 col-lg-3 order-3 order-md-2">
+				
+					 </div>
+					 
+					 
+					 <div class="col-10 col-md-6 col-lg-8 order-1 order-md-3">
+					     <div class="xp-profilebar text-right">
+						    <nav class="navbar p-0">
+							 
+							</nav>
+						 </div>
+					 </div>
+					 
+				 </div>
+				 
+				 <div class="xp-breadcrumbbar text-center">
+				    <h4 class="page-title">Dashboard</h4>
+					<ol class="breadcrumb">
+					  <li class="breadcrumb-item"><a href="#">Carbonoz</a></li>
+					  <li class="breadcrumb-item active" aria-curent="page">SolarAutopilot</li>
+					</ol>
+				 </div>
+				 
+				 
+			 </div>
+		  </div>
+		  <!------top-navbar-end-----------> 
+		  
+		  
+		   <!------main-content-start-----------> 
+		     
+		      <div class="main-content">
+			     <div class="row">
+				    <div class="col-md-12">
+					   <div class="table-wrapper">
+					     
+					   <div class="table-title">
+					     <div class="row">
+						     <div class="col-sm-6 p-0 flex justify-content-lg-start justify-content-center">
+							    <h2 class="ml-lg-2">Totals</h2>
+							 </div>
+							 <div class="col-sm-6 p-0 flex justify-content-lg-end justify-content-center">
+						
+							 
+							 </div>
+					     </div>
+					   </div>
+					   
+					  
+                       <div class="table-container">
+                           <h4>Last 30 days</h4>
+                           <table>
+                               <thead>
+                                   <tr>
+                                       <th>Date</th>
+                                       <th>Load</th>
+                                       <th>Solar PV</th>
+                                       <th>Battery Charged</th>
+                                       <th>Battery Discharged</th>
+                                       <th>Grid Used</th>
+                                       <th>Grid Exported</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+								<% for (let i = data.loadPowerData.length - 1; i >= 0; i--) { %>
+									<tr>
+										<td><%= new Date(data.loadPowerData[i].time).toLocaleDateString() %></td>
+										<% const today = new Date().toLocaleDateString(); %>
+										<% const currentDate = new Date(data.loadPowerData[i].time).toLocaleDateString(); %>
+										<% if (today === currentDate) { %>
+											<td><%= (data.loadPowerData[i].value / 100 / 2).toFixed(1) %> kWh</td>
+											<td><%= (data.pvPowerData[i].value / 100 / 2).toFixed(1) %> kWh</td>
+											<td><%= (data.batteryStateOfChargeData[i].value / 20).toFixed(1) %> kWh</td>
+											<td><%= Math.abs((data.batteryPowerData[i].value / 100 / 2)).toFixed(1) %> kWh</td>
+											<td><%= Math.abs((data.gridPowerData[i].value / 100 / 2)).toFixed(1) %> kWh</td>
+											<td><%= (Math.max(0, (data.pvPowerData[i].value - data.loadPowerData[i].value + data.batteryPowerData[i].value) / 100 / 2)).toFixed(1) %> kWh</td>
+										<% } else { %>
+											<td><%= (data.loadPowerData[i].value / 100).toFixed(1) %> kWh</td>
+											<td><%= (data.pvPowerData[i].value / 100).toFixed(1) %> kWh</td>
+											<td><%= (data.batteryStateOfChargeData[i].value / 20).toFixed(1) %> kWh</td>
+											<td><%= Math.abs((data.batteryPowerData[i].value / 100)).toFixed(1) %> kWh</td>
+											<td><%= Math.abs((data.gridPowerData[i].value / 100)).toFixed(1) %> kWh</td>
+											<td><%= (Math.max(0, (data.pvPowerData[i].value - data.loadPowerData[i].value + data.batteryPowerData[i].value) / 100)).toFixed(1) %> kWh</td>
+										<% } %>
+									</tr>
+								<% } %>
+								
+                               </tbody>
+                           </table>
+
+						   <div class="chartCard">
+							<div class="chartBox">
+							  <canvas id="myChart"></canvas>
+							</div>
+						  </div>
+						  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+						  <script>
+							// setup 
+							const influxDBEndpoint = 'http://192.168.160.55:8086/query?db=homeassistant&u=admin&p=adminadmin';
+						
+							async function fetchData() {
+							  const queries = [
+								`SELECT MEAN("value") AS "Power" FROM "state" WHERE time > now() - 30d AND "topic" = 'solar_assistant_DEYE/total/load_power/state' GROUP BY time(1d)`,
+								`SELECT MEAN("value") AS "Power" FROM "state" WHERE time > now() - 30d AND "topic" = 'solar_assistant_DEYE/total/grid_power/state' GROUP BY time(1d)`,
+								`SELECT MEAN("value") AS "Power" FROM "state" WHERE time > now() - 30d AND "topic" = 'solar_assistant_DEYE/total/pv_power/state' GROUP BY time(1d)`
+							  ];
+						
+							  const responses = await Promise.all(queries.map(async query => {
+								const response = await fetch(influxDBEndpoint, {
+								  method: 'POST',
+								  headers: {
+									'Content-Type': 'application/x-www-form-urlencoded'
+								  },
+								  body: `q=${encodeURIComponent(query)}`
+								});
+								return await response.json();
+							  }));
+						
+							  return responses.map(response => {
+								if (response.results && response.results[0] && response.results[0].series && response.results[0].series[0]) {
+								  return response.results[0].series[0].values;
+								}
+								return [];
+							  });
+							}
+						
+							async function renderChart() {
+							  try {
+								const dataSets = await fetchData();
+								const labels = dataSets[0].map(row => row[0]);
+								const datasets = {
+								  'Load Power': dataSets[0].map(row => row[1]),
+								  'Grid Power': dataSets[1].map(row => row[1]),
+								  'PV Power': dataSets[2].map(row => row[1])
+								};
+						
+								const chartData = {
+								  labels: labels,
+								  datasets: Object.keys(datasets).map(powerType => ({
+									label: powerType,
+									data: datasets[powerType],
+									backgroundColor: powerType === 'Load Power' ? 'rgba(54, 162, 235, 0.2)' :
+													 powerType === 'Grid Power' ? 'rgba(255, 99, 132, 0.2)' : 
+													 'rgba(255, 206, 86, 0.2)',
+									borderColor: powerType === 'Load Power' ? 'rgba(54, 162, 235, 1)' :
+												  powerType === 'Grid Power' ? 'rgba(255, 99, 132, 1)' : 
+												  'rgba(255, 206, 86, 1)',
+									borderWidth: 1
+								  }))
+								};
+						
+								const config = {
+								  type: 'bar',
+								  data: chartData,
+								  options: {
+									scales: {
+									  y: {
+										beginAtZero: true
+									  }
+									}
+								  }
+								};
+						
+								const ctx = document.getElementById('myChart').getContext('2d');
+								new Chart(ctx, config);
+							  } catch (error) {
+								console.error('Error:', error.message);
+							  }
+							}
+						
+							window.onload = renderChart;
+						
+							const chartVersion = document.getElementById('chartVersion');
+							chartVersion.innerText = Chart.version;
+						  </script>
+                       
+					   <h4>Last 12 months</h4>
+					   <table>
+						   <thead>
+							   <tr>
+								   <th>Month</th>
+								   <th>Load</th>
+								   <th>Solar PV</th>
+								   <th>Battery Charged</th>
+								   <th>Battery Discharged</th>
+								   <th>Grid Used</th>
+								   <th>Grid Exported</th>
+							   </tr>
+						   </thead>
+						   <tbody>
+							<% const today = new Date(); %>
+							<% for (let i = 0; i < 12; i++) { %>
+							  <% const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1); %>
+							  <% const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 0); %>
+							  <% let load = 0, solarPV = 0, batteryCharged = 0, batteryDischarged = 0, gridUsed = 0, gridExported = 0; %>
+							  <% for (let j = data.loadPowerData.length - 1; j >= 0; j--) { %>
+								<% const date = new Date(data.loadPowerData[j].time); %>
+								<% if (date >= monthStart && date <= monthEnd) { %>
+								  <% load += data.loadPowerData[j].value / 100; %>
+								  <% solarPV += data.pvPowerData[j].value / 100; %>
+								  <% batteryCharged += data.batteryStateOfChargeData[j].value / 20; %>
+								  <% batteryDischarged += Math.abs((data.batteryPowerData[j].value / 100)); %>
+								  <% gridUsed += Math.abs((data.gridPowerData[j].value / 100)); %>
+								  <% gridExported += Math.max(0, (data.pvPowerData[j].value - data.loadPowerData[j].value + data.batteryPowerData[j].value) / 100); %>
+								<% } %>
+							  <% } %>
+      <tr>
+        <td><%= monthStart.toLocaleString('default', { month: 'long', year: 'numeric' }) %></td>
+        <td><%= load.toFixed(1) %> kWh</td>
+        <td><%= solarPV.toFixed(1) %> kWh</td>
+        <td><%= batteryCharged.toFixed(1) %> kWh</td>
+        <td><%= batteryDischarged.toFixed(1) %> kWh</td>
+        <td><%= gridUsed.toFixed(1) %> kWh</td>
+        <td><%= gridExported.toFixed(1) %> kWh</td>
+      </tr>
+    <% } %>
+						   </tbody>
+					   </table>
+					   
+
+					     <!-- CSV Export Section -->
+					
+
+					  
+					
+						 <div class="export-section">
+							<button id="exportCSV">Export CSV</button>
+							<select id="timeSpanSelect">
+							  <option value="day">Last Day</option>
+							  <option value="week">Last Week</option>
+							  <option value="month" selected>Last Month</option>
+							</select>
+						  </div>		
+	
+
+					  
+					
+					
+				 
+			     </div>
+			  </div>
+		  
+		    <!------main-content-end-----------> 
+		  
+		 
+		 
+		 <!----footer-design------------->
+		 
+		 <footer class="footer">
+		    <div class="container-fluid">
+			   <div class="footer-in">
+			      <p class="mb-0">&copy 2024 Carbonoz . All Rights Reserved.</p>
+			   </div>
+			</div>
+		 </footer>
+		 
+		 
+		 
+		 
+	  </div>
+   
+</div>
+
+
+
+<!-------complete html----------->
+
+
+
+
+
+  
+     <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+   <script src="js/jquery-3.3.1.slim.min.js"></script>
+   <script src="js/popper.min.js"></script>
+   <script src="js/bootstrap.min.js"></script>
+   <script src="js/jquery-3.3.1.min.js"></script>
+  
+  
+  <script type="text/javascript">
+       $(document).ready(function(){
+	      $(".xp-menubar").on('click',function(){
+		    $("#sidebar").toggleClass('active');
+			$("#content").toggleClass('active');
+		  });
+		  
+		  $('.xp-menubar,.body-overlay').on('click',function(){
+		     $("#sidebar,.body-overlay").toggleClass('show-nav');
+		  });
+		  
+	   });
+
+
+
+	   const exportCSVBtn = document.getElementById('exportCSV');
+      const timeSpanSelect = document.getElementById('timeSpanSelect');
+
+      exportCSVBtn.addEventListener('click', () => {
+        const timeSpan = timeSpanSelect.value;
+        const url = `/api/csv-export?timeSpan=${timeSpan}`;
+
+        fetch(url)
+          .then(response => response.blob())
+          .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          })
+          .catch(error => console.error('Error exporting CSV:', error));
+      });
+  </script>
+  
+  
+
+
+  </body>
+  
+  </html>

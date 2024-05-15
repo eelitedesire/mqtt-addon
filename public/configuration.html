@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+        <title>Carbonoz SolarAutopilot</title>
+	    <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+	    <!----css3---->
+        <link rel="stylesheet" href="css/custom.css">
+		
+		
+		<!--google fonts -->
+	    <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+	
+	
+	   <!--google material icon-->
+      <link href="https://fonts.googleapis.com/css2?family=Material+Icons"rel="stylesheet">
+      <style>
+
+h2 {
+  text-align: center;
+}
+
+label {
+  justify-content: center;
+  display: flex;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.5s ease-in-out;
+}
+
+select {
+  width: 62%;
+  height: 30px;
+  background: #e0dede;
+  justify-content: center;
+  display: flex;
+  margin: 10px auto;
+  padding: 5px;
+  border: none;
+  outline: none;
+  border-radius: 5px;
+}
+
+input {
+  width: 60%;
+  height: 20px;
+  background: #e0dede;
+  justify-content: center;
+  display: flex;
+  margin: 10px auto;
+  padding: 5px;
+  border: none;
+  outline: none;
+  border-radius: 5px;
+  font-family: sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+button {
+  width: 60%;
+  height: 40px;
+  margin: 10px auto;
+  justify-content: center;
+  display: block;
+  color: #fff;
+  background: #000;
+  font-size: 1em;
+  font-weight: bold;
+  margin-top: 20px;
+  outline: none;
+  border: none;
+  border-radius: 5px;
+  transition: 0.2s ease-in;
+  cursor: pointer;
+}
+     
+    </style>
+      
+
+  </head>
+  <body>
+  
+
+
+<div class="wrapper">
+     
+	  <div class="body-overlay"></div>
+	 
+	 <!-------sidebar--design------------>
+	 
+	 <div id="sidebar">
+	    <div class="sidebar-header">
+		   <h3><img src="img/logo.png" class="img-fluid"/><span>Carbonoz </span></h3>
+		</div>
+		<ul class="list-unstyled component m-0">
+		  <li class="active">
+		  <a href="/status" class="dashboard"><i class="material-icons">dashboard</i>dashboard </a>
+		  </li>
+
+		  <li>
+			<a href="/charts" class="charts"><i class="material-icons">insert_chart</i>Charts</a>
+		</li>
+
+		<li>
+			<a href="/analytics" class="total-icon"><i class="material-icons">functions</i>Totals</a>
+		</li>
+		
+		
+		<li>
+			<a href="/messages" class="message-icon"><i class="material-icons">message</i>Message</a>
+		</li>
+		
+		
+        <li>
+            <a href="/automation" class="automation-icon"><i class="material-icons">build</i>Automation</a>
+        </li>
+        <li>
+          <a href="/configuration" class="config-icon"><i class="material-icons">settings</i>Configuration</a>
+      </li>
+		 
+		  
+	 </div>
+	 
+   <!-------sidebar--design- close----------->
+   
+   
+   
+      <!-------page-content start----------->
+   
+      <div id="content">
+	     
+		  <!------top-navbar-start-----------> 
+		     
+		  <div class="top-navbar">
+		     <div class="xd-topbar">
+			     <div class="row">
+				     <div class="col-2 col-md-1 col-lg-1 order-2 order-md-1 align-self-center">
+					    <div class="xp-menubar">
+						    <span class="material-icons text-white">signal_cellular_alt</span>
+						</div>
+					 </div>
+					 
+					 <div class="col-md-5 col-lg-3 order-3 order-md-2">
+				
+					 </div>
+					 
+					 
+					 <div class="col-10 col-md-6 col-lg-8 order-1 order-md-3">
+					     <div class="xp-profilebar text-right">
+						    <nav class="navbar p-0">
+			
+							</nav>
+						 </div>
+					 </div>
+					 
+				 </div>
+				 
+				 <div class="xp-breadcrumbbar text-center">
+				    <h4 class="page-title">Dashboard</h4>
+					<ol class="breadcrumb">
+					  <li class="breadcrumb-item"><a href="#">Carbonoz</a></li>
+					  <li class="breadcrumb-item active" aria-curent="page">SolarAutopilot</li>
+					</ol>
+				 </div>
+				 
+				 
+			 </div>
+		  </div>
+		  <!------top-navbar-end-----------> 
+		  
+		  
+		   <!------main-content-start-----------> 
+		     
+		      <div class="main-content">
+			     <div class="row">
+				    <div class="col-md-12">
+					   <div class="table-wrapper">
+					     
+					   <div class="table-title">
+					     <div class="row">
+						     <div class="col-sm-6 p-0 flex justify-content-lg-start justify-content-center">
+							    <h2 class="ml-lg-2">Configuration</h2>
+							 </div>
+							 <div class="col-sm-6 p-0 flex justify-content-lg-end justify-content-center">
+							   
+							 </div>
+					     </div>
+					   </div>
+					   
+
+<br>
+					   
+<!-- dashboard -->
+
+
+
+
+    <div class="confuguration-container">
+      <form id="inverterConfigForm">
+        <label for="inverterBrand">Select Inverter:</label>
+        <select id="inverterBrand" name="inverterBrand" onchange="showInverterSettings(this.value)" required>
+          <option value="" disabled>Select Inverter Brand</option>
+          <option value="Axpert">Axpert</option>
+          <option value="Growatt">Growatt</option>
+          <option value="EG4">EG4</option>
+          <option value="Deye">Deye</option>
+          <option value="Kodak">Kodak</option>
+          <option value="SunSynk">SunSynk</option>
+          <option value="MPP Solar">MPP Solar</option>
+          <option value="Sol-Ark">Sol-Ark</option>
+          <option value="Mecer">Mecer</option>
+          <option value="RCT">RCT</option>
+          <option value="MUST Power">MUST Power</option>
+          <option value="SRNE">SRNE</option>
+          <option value="InfiniSolar">InfiniSolar</option>
+          <option value="Easun Power">Easun Power</option>
+          <option value="Megarevo">Megarevo</option>
+          <option value="Luxpower">Luxpower</option>
+        </select>
+        <br><br>
+        <div id="inverterSettingsContainer"></div>
+        <button type="button" onclick="saveInverterConfig()">Save</button>
+      </form>
+    </div>
+ 
+					
+									
+	
+
+					  
+					
+					
+				 
+			     </div>
+			  </div>
+		  
+		    <!------main-content-end-----------> 
+		  
+		 
+		 
+		 <!----footer-design------------->
+		 
+		 <footer class="footer">
+		    <div class="container-fluid">
+			   <div class="footer-in">
+				<p class="mb-0">&copy 2024 Carbonoz . All Rights Reserved.</p>
+			   </div>
+			</div>
+		 </footer>
+		 
+		 
+		 
+		 
+	  </div>
+   
+</div>
+
+
+
+<!-------complete html----------->
+
+
+
+
+
+  
+     <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+   <script src="js/jquery-3.3.1.slim.min.js"></script>
+   <script src="js/popper.min.js"></script>
+   <script src="js/bootstrap.min.js"></script>
+   <script src="js/jquery-3.3.1.min.js"></script>
+  
+  
+  <script type="text/javascript">
+       $(document).ready(function(){
+	      $(".xp-menubar").on('click',function(){
+		    $("#sidebar").toggleClass('active');
+			$("#content").toggleClass('active');
+		  });
+		  
+		  $('.xp-menubar,.body-overlay').on('click',function(){
+		     $("#sidebar,.body-overlay").toggleClass('show-nav');
+		  });
+		  
+	   });
+  </script>
+  
+  <script src="/js/home-assistant-energy-usage-card.js"></script>
+  <script src="/js/home-assistant-battery-storage-card.js"></script>
+  <script>
+ let inverterSettings = {};
+
+function saveInverterConfig() {
+  const brand = document.getElementById('inverterBrand').value;
+  if (brand) {
+    const inverterConfig = getInverterConfigFromForm();
+
+    fetch('/save-inverter-config', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ [brand]: inverterConfig })
+    })
+    .then(response => response.json())
+    .then(data => {
+      alert(data.message);
+      inverterSettings[brand] = inverterConfig; // Update the local inverterSettings object
+    })
+    .catch(error => alert(`Error: ${error}`));
+  } else {
+    alert('Please select an inverter brand');
+  }
+}
+
+function getInverterConfigFromForm() {
+  const workMode = document.getElementById('workMode').value;
+  const energyPattern = document.getElementById('energyPattern').value;
+  const maxSellPower = document.getElementById('maxSellPower').value;
+  const solarExportWhenBatteryFull = document.getElementById('solarExportWhenBatteryFull').value === 'true';
+
+  return {
+    workMode,
+    energyPattern,
+    maxSellPower,
+    solarExportWhenBatteryFull
+  };
+}
+
+function showInverterSettings(brand) {
+  const inverterSettingsContainer = document.getElementById('inverterSettingsContainer');
+  inverterSettingsContainer.innerHTML = '';
+
+  if (brand) {
+    inverterSettingsContainer.innerHTML = `
+      <div>
+        <label for="workMode">Work Mode:</label>
+        <input type="text" id="workMode" name="workMode" placeholder="Work Mode">
+      </div>
+      <div>
+        <label for="energyPattern">Energy Pattern:</label>
+        <input type="text" id="energyPattern" name="energyPattern" placeholder="Energy Pattern">
+      </div>
+      <div>
+        <label for="maxSellPower">Max Sell Power:</label>
+        <input type="text" id="maxSellPower" name="maxSellPower" placeholder="Sell Power">
+      </div>
+      <div>
+        <label for="solarExportWhenBatteryFull">Solar Export When Battery Full:</label>
+        <select id="solarExportWhenBatteryFull" name="solarExportWhenBatteryFull">
+          <option value="true">True</option>
+          <option value="false">False</option>
+        </select>
+      </div>
+    `;
+  }
+}
+  </script>
+  
+
+
+  </body>
+  
+  </html>
+
+
