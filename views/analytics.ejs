@@ -177,47 +177,49 @@
 					     </div>
 					   </div>
 					   
-					  
-                       <div class="table-container">
-                           <h4>Last 30 days</h4>
-                           <table>
-                               <thead>
-                                   <tr>
-                                       <th>Date</th>
-                                       <th>Load</th>
-                                       <th>Solar PV</th>
-                                       <th>Battery Charged</th>
-                                       <th>Battery Discharged</th>
-                                       <th>Grid Used</th>
-                                       <th>Grid Exported</th>
-                                   </tr>
-                               </thead>
-                               <tbody>
-								<% for (let i = data.loadPowerData.length - 1; i >= 0; i--) { %>
-									<tr>
-										<td><%= new Date(data.loadPowerData[i].time).toLocaleDateString() %></td>
-										<% const today = new Date().toLocaleDateString(); %>
-										<% const currentDate = new Date(data.loadPowerData[i].time).toLocaleDateString(); %>
-										<% if (today === currentDate) { %>
-											<td><%= (data.loadPowerData[i].value / 100 / 2).toFixed(1) %> kWh</td>
-											<td><%= (data.pvPowerData[i].value / 100 / 2).toFixed(1) %> kWh</td>
-											<td><%= (data.batteryStateOfChargeData[i].value / 20).toFixed(1) %> kWh</td>
-											<td><%= Math.abs((data.batteryPowerData[i].value / 100 / 2)).toFixed(1) %> kWh</td>
-											<td><%= Math.abs((data.gridPowerData[i].value / 100 / 2)).toFixed(1) %> kWh</td>
-											<td><%= (Math.max(0, (data.pvPowerData[i].value - data.loadPowerData[i].value + data.batteryPowerData[i].value) / 100 / 2)).toFixed(1) %> kWh</td>
-										<% } else { %>
-											<td><%= (data.loadPowerData[i].value / 100).toFixed(1) %> kWh</td>
-											<td><%= (data.pvPowerData[i].value / 100).toFixed(1) %> kWh</td>
-											<td><%= (data.batteryStateOfChargeData[i].value / 20).toFixed(1) %> kWh</td>
-											<td><%= Math.abs((data.batteryPowerData[i].value / 100)).toFixed(1) %> kWh</td>
-											<td><%= Math.abs((data.gridPowerData[i].value / 100)).toFixed(1) %> kWh</td>
-											<td><%= (Math.max(0, (data.pvPowerData[i].value - data.loadPowerData[i].value + data.batteryPowerData[i].value) / 100)).toFixed(1) %> kWh</td>
-										<% } %>
-									</tr>
-								<% } %>
-								
-                               </tbody>
-                           </table>
+					
+						<div class="table-container">
+							<h4>Last 30 days</h4>
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Load</th>
+            <th>Solar PV</th>
+            <th>Battery Charged</th>
+            <th>Battery Discharged</th>
+            <th>Grid Used</th>
+            <th>Grid Exported</th>
+        </tr>
+    </thead>
+    <tbody>
+        <% for (let i = data.loadPowerData.length - 1; i >= 1 && i >= data.loadPowerData.length - 30; i--) { %>
+            <tr>
+                <td><%= new Date(data.loadPowerData[i].time).toLocaleDateString() %></td>
+                <% if (data.loadPowerData[i-1].value !== 0) { %>
+                    <td><%= Math.abs(data.loadPowerData[i].value - data.loadPowerData[i-1].value).toFixed(1) %> kWh</td>
+                    <td><%= Math.abs(data.pvPowerData[i].value - data.pvPowerData[i-1].value).toFixed(1) %> kWh</td>
+                    <td><%= Math.abs(data.batteryStateOfChargeData[i].value - data.batteryStateOfChargeData[i-1].value).toFixed(1) %> kWh</td>
+                    <td><%= Math.abs(data.batteryPowerData[i].value - data.batteryPowerData[i-1].value).toFixed(1) %> kWh</td>
+                    <td><%= Math.abs(data.gridPowerData[i].value - data.gridPowerData[i-1].value).toFixed(1) %> kWh</td>
+                    <td><%= Math.abs(Math.max(0, (data.pvPowerData[i].value - data.loadPowerData[i].value + data.batteryPowerData[i].value) - (data.pvPowerData[i-1].value - data.loadPowerData[i-1].value + data.batteryPowerData[i-1].value))).toFixed(1) %> kWh</td>
+                <% } else { %>
+                    <td>0 kWh</td>
+                    <td>0 kWh</td>
+                    <td>0 kWh</td>
+                    <td>0 kWh</td>
+                    <td>0 kWh</td>
+                    <td>0 kWh</td>
+                <% } %>
+            </tr>
+        <% } %>
+    </tbody>
+</table>
+
+							
+							
+                        </div>
+					  </div>
 
 						   <div class="chartCard">
 							<div class="chartBox">
@@ -327,12 +329,12 @@
 							  <% for (let j = data.loadPowerData.length - 1; j >= 0; j--) { %>
 								<% const date = new Date(data.loadPowerData[j].time); %>
 								<% if (date >= monthStart && date <= monthEnd) { %>
-								  <% load += data.loadPowerData[j].value / 100; %>
-								  <% solarPV += data.pvPowerData[j].value / 100; %>
-								  <% batteryCharged += data.batteryStateOfChargeData[j].value / 20; %>
-								  <% batteryDischarged += Math.abs((data.batteryPowerData[j].value / 100)); %>
-								  <% gridUsed += Math.abs((data.gridPowerData[j].value / 100)); %>
-								  <% gridExported += Math.max(0, (data.pvPowerData[j].value - data.loadPowerData[j].value + data.batteryPowerData[j].value) / 100); %>
+								  <% load += data.loadPowerData[j].value ; %>
+								  <% solarPV += data.pvPowerData[j].value ; %>
+								  <% batteryCharged += data.batteryStateOfChargeData[j].value ;%>
+								  <% batteryDischarged += Math.abs((data.batteryPowerData[j].value)); %>
+								  <% gridUsed += Math.abs((data.gridPowerData[j].value)); %>
+								  <% gridExported += Math.abs((data.gridVoltageData[i].value)); %>
 								<% } %>
 							  <% } %>
       <tr>
@@ -452,3 +454,4 @@
   </body>
   
   </html>
+
