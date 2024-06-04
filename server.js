@@ -7,7 +7,7 @@ const Influx = require('influx');
 const ejs = require('ejs');
 
 const app = express();
-const port = 8000;
+const port = 6789;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
@@ -45,6 +45,10 @@ let incomingMessages = [];
 
 // Express routes
 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.get('/automation', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'automation.html'));
 });
@@ -77,12 +81,12 @@ app.get('/api/messages', (req, res) => {
 
 app.get('/analytics', async (req, res) => {
     try {
-        const loadPowerData = await queryInfluxDB('solar_assistant_DEYE/total/load_power/state');
-        const pvPowerData = await queryInfluxDB('solar_assistant_DEYE/total/pv_power/state');
-        const batteryStateOfChargeData = await queryInfluxDB('solar_assistant_DEYE/total/battery_state_of_charge/state');
-        const batteryPowerData = await queryInfluxDB('solar_assistant_DEYE/total/battery_power/state');
-        const gridPowerData = await queryInfluxDB('solar_assistant_DEYE/total/grid_power/state');
-        const gridVoltageData = await queryInfluxDB('solar_assistant_DEYE/total/grid_voltage/state');
+        const loadPowerData = await queryInfluxDB('solar_assistant_DEYE/total/load_energy/state');
+        const pvPowerData = await queryInfluxDB('solar_assistant_DEYE/total/pv_energy/state');
+        const batteryStateOfChargeData = await queryInfluxDB('solar_assistant_DEYE/total/battery_energy_in/state');
+        const batteryPowerData = await queryInfluxDB('solar_assistant_DEYE/total/battery_energy_out/state');
+        const gridPowerData = await queryInfluxDB('solar_assistant_DEYE/total/grid_energy_in/state');
+        const gridVoltageData = await queryInfluxDB('solar_assistant_DEYE/total/grid_energy_out/state');
 
         const solarPvTotalDaily = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'daily');
         const solarPvTotalWeekly = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'weekly');
@@ -110,7 +114,7 @@ app.get('/analytics', async (req, res) => {
     }
 });
 
-app.get('/', async (req, res) => {
+app.get('/energy', async (req, res) => {
     try {
         const loadPowerData = await queryInfluxDB('solar_assistant_DEYE/total/load_power/state');
         const solarProductionData = await queryInfluxDB('solar_assistant_DEYE/total/pv_power/state');
@@ -259,7 +263,7 @@ function saveMessageToInfluxDB(topic, message) {
 
 async function queryInfluxDB(topic) {
     const query = `
-        SELECT mean("value") * 2.38 AS "value"
+        SELECT mean("value") AS "value"
         FROM "state"
         WHERE "topic" = '${topic}'
         AND time >= now() - 30d
