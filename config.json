@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "slug": "mqtt_addons",
     "description": "CARBONOZ SolarAutopilot on Homeassistant runs in a Docker container and will be offered in the Homeassistant Addon store for download. It includes a live Solar dashboard similiar to Solar Assistant project and allows inverter changes over MQTT.",
-    "url": "http://192.168.160.55:8000",
+    "url": "http://192.168.160.55:6789",
     "arch": ["amd64", "armhf", "aarch64"],
     "startup": "before",
     "boot": "auto",
