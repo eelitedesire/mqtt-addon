@@ -1,29 +1,36 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
-        <title>Carbonoz SolarAutopilot</title>
-	    <!-- Bootstrap CSS -->
-        <link rel="stylesheet" href="css/bootstrap.min.css">
-	    <!----css3---->
-        <link rel="stylesheet" href="css/custom.css">
-		
-		
-		<!--google fonts -->
-	    <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-	
-	
-	   <!--google material icon-->
-      <link href="https://fonts.googleapis.com/css2?family=Material+Icons"rel="stylesheet">
-	  <style>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+    <title>Carbonoz SolarAutopilot</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <!----css3---->
+    <link rel="stylesheet" href="css/custom.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Google Material Icon -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+
+    <style>
+    
+
         .table-container {
-            margin: 0 auto; 
-            width: 80%; 
+            margin: 0 auto;
+            width: 80%;
         }
 
         table {
@@ -40,418 +47,457 @@
         tr:hover {
             background-color: #f5f5f5;
         }
-    .chartMenu {
-      width: 100vw;
-      height: 40px;
-      background: #1A1A1A;
-      color: rgba(54, 162, 235, 1);
-    }
-    .chartMenu p {
-      padding: 10px;
-      font-size: 20px;
-    }
-    .chartCard {
-      width: 70vw;
-      height: calc(100vh - 40px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .chartBox {
-      width: 700px;
-      padding: 20px;
-      border-radius: 20px;
-      border: solid 3px rgba(54, 162, 235, 1);
-      background: white;
-    }
+
+        .chartMenu {
+            width: 100%;
+            height: 40px;
+            background: #1A1A1A;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .chartMenu p {
+            padding: 10px;
+            font-size: 20px;
+        }
+
+        .chartCard {
+            width: 70vw;
+            height: calc(100vh - 40px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chartBox {
+            width: 850px;
+            padding: 10px;
+            border-radius: 20px;
+            border: solid 30px rgba(54, 162, 235, 1);
+            background: white;
+            margin-bottom: 10px;
+            margin-left: 200px;
+
+        }
     </style>
 
-  </head>
-  <body>
-  
+<script>
+    function generateCSV(tableId) {
+        let csv = [];
+        const rows = document.querySelectorAll(`#${tableId} tbody tr`);
 
+        // Header row
+        let headerRow = [];
+        const headers = document.querySelectorAll(`#${tableId} thead th`);
+        headers.forEach(header => {
+            headerRow.push(header.textContent.trim());
+        });
+        csv.push(headerRow.join(','));
 
+        // Data rows
+        rows.forEach(row => {
+            let rowData = [];
+            const cells = row.querySelectorAll('td');
+            cells.forEach(cell => {
+                rowData.push(cell.textContent.trim());
+            });
+            csv.push(rowData.join(','));
+        });
+
+        // Create a Blob object with CSV data
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+
+        // Update download link
+        const downloadLink = document.getElementById(`${tableId}-download`);
+        downloadLink.href = url;
+        downloadLink.download = `${tableId}-${new Date().toISOString()}.csv`;
+    }
+
+    setInterval(() => {
+        generateCSV('last30days-table');
+        generateCSV('last12months-table');
+    }, 2000);
+
+    function getTableData(tableId) {
+        const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+        let labels = [];
+        let solarData = [];
+        let gridData = [];
+        let loadData = [];
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            labels.push(cells[0].textContent.trim());
+            solarData.push(parseFloat(cells[1].textContent.trim()));
+            gridData.push(parseFloat(cells[2].textContent.trim()));
+            loadData.push(parseFloat(cells[3].textContent.trim()));
+        });
+
+        return { labels, solarData, gridData, loadData };
+    }
+
+    function updateChart(chartElementId, labels, datasets) {
+        const ctx = document.getElementById(chartElementId).getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { stacked: true },
+                    y: {
+                        stacked: true,
+                        title: { display: true, text: 'kWh' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: chartElementId.replace(/-/g, ' ') }
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const last30DaysData = getTableData('last30days-table');
+        updateChart('last-30-days-chart', last30DaysData.labels, [
+            { label: 'Solar', data: last30DaysData.solarData, backgroundColor: '#FFA500' },
+            { label: 'Grid', data: last30DaysData.gridData, backgroundColor: '#4CAF50' },
+            { label: 'Load', data: last30DaysData.loadData, backgroundColor: '#FF5722' }
+        ]);
+
+        const last12MonthsData = getTableData('last12months-table');
+        updateChart('last-12-months-chart', last12MonthsData.labels, [
+            { label: 'Solar', data: last12MonthsData.solarData, backgroundColor: '#FFA500' },
+            { label: 'Grid', data: last12MonthsData.gridData, backgroundColor: '#4CAF50' },
+            { label: 'Load', data: last12MonthsData.loadData, backgroundColor: '#FF5722' }
+        ]);
+
+        function calculateSolarPVTotals(data) {
+            let dailyTotal = 0;
+            let weeklyTotal = 0;
+            let monthlyTotal = 0;
+
+            dailyTotal = data.solarData[0];
+            for (let i = 0; i < 7; i++) {
+                weeklyTotal += data.solarData[i];
+            }
+            for (let i = 0; i < 30; i++) {
+                monthlyTotal += data.solarData[i];
+            }
+
+            return { dailyTotal, weeklyTotal, monthlyTotal };
+        }
+
+        const solarPVTotalsLast30Days = calculateSolarPVTotals(last30DaysData);
+        document.getElementById('daily-solar-pv-total').textContent = `${solarPVTotalsLast30Days.dailyTotal.toFixed(1)} kWh`;
+        document.getElementById('weekly-solar-pv-total').textContent = `${solarPVTotalsLast30Days.weeklyTotal.toFixed(1)} kWh`;
+        document.getElementById('monthly-solar-pv-total').textContent = `${solarPVTotalsLast30Days.monthlyTotal.toFixed(1)} kWh`;
+    });
+    </script>
+
+</head>
+<body>
 <div class="wrapper">
-     
-	  <div class="body-overlay"></div>
-	 
-	 <!-------sidebar--design------------>
-	 
-	 <div id="sidebar">
-	    <div class="sidebar-header">
-		   <h3><img src="img/logo.png" class="img-fluid"/><span>Carbonoz </span></h3>
-		</div>
-		<ul class="list-unstyled component m-0">
-		  <li class="active">
-		  <a href="/status" class="dashboard"><i class="material-icons">dashboard</i>dashboard </a>
-		  </li>
+    <div class="body-overlay"></div>
 
-		  <li>
-			<a href="/charts" class="charts"><i class="material-icons">insert_chart</i>Charts</a>
-		</li>
+    <!-------sidebar--design------------>
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h3><img src="img/logo.png" class="img-fluid"/><span>Carbonoz </span></h3>
+        </div>
+        <ul class="list-unstyled component m-0">
+            <li class="active">
+                <a href="/" class="dashboard"><i class="material-icons">dashboard</i>dashboard</a>
+            </li>
+            <li>
+				<a href="/dashboard" class="charts"><i class="material-icons">battery_charging_full</i>Energy</a>
+			</li>
+            <li>
+                <a href="/analytics" class="total-icon"><i class="material-icons">functions</i>Totals</a>
+            </li>
+            <li>
+                <a href="/messages" class="message-icon"><i class="material-icons">message</i>Message</a>
+            </li>
+            <li>
+                <a href="/automation" class="automation-icon"><i class="material-icons">build</i>Automation</a>
+            </li>
+            <li>
+                <a href="/configuration" class="config-icon"><i class="material-icons">settings</i>Configuration</a>
+            </li>
+        </ul>
+    </div>
+    <!-------sidebar--design- close----------->
 
-		<li>
-			<a href="/analytics" class="total-icon"><i class="material-icons">functions</i>Totals</a>
-		</li>
-		
-		
-		<li>
-			<a href="/messages" class="message-icon"><i class="material-icons">message</i>Message</a>
-		</li>
-		<li>
-			<a href="/automation" class="automation-icon"><i class="material-icons">build</i>Automation</a>
-		</li>
-		<li>
-		  <a href="/configuration" class="config-icon"><i class="material-icons">settings</i>Configuration</a>
-	  </li>
-		
-		
-		 
-		  
-	 </div>
-	 
-   <!-------sidebar--design- close----------->
-   
-   
-   
-      <!-------page-content start----------->
-   
-      <div id="content">
-	     
-		  <!------top-navbar-start-----------> 
-		     
-		  <div class="top-navbar">
-		     <div class="xd-topbar">
-			     <div class="row">
-				     <div class="col-2 col-md-1 col-lg-1 order-2 order-md-1 align-self-center">
-					    <div class="xp-menubar">
-						    <span class="material-icons text-white">signal_cellular_alt</span>
-						</div>
-					 </div>
-					 
-					 <div class="col-md-5 col-lg-3 order-3 order-md-2">
-				
-					 </div>
-					 
-					 
-					 <div class="col-10 col-md-6 col-lg-8 order-1 order-md-3">
-					     <div class="xp-profilebar text-right">
-						    <nav class="navbar p-0">
-							 
-							</nav>
-						 </div>
-					 </div>
-					 
-				 </div>
-				 
-				 <div class="xp-breadcrumbbar text-center">
-				    <h4 class="page-title">Dashboard</h4>
-					<ol class="breadcrumb">
-					  <li class="breadcrumb-item"><a href="#">Carbonoz</a></li>
-					  <li class="breadcrumb-item active" aria-curent="page">SolarAutopilot</li>
-					</ol>
-				 </div>
-				 
-				 
-			 </div>
-		  </div>
-		  <!------top-navbar-end-----------> 
-		  
-		  
-		   <!------main-content-start-----------> 
-		     
-		      <div class="main-content">
-			     <div class="row">
-				    <div class="col-md-12">
-					   <div class="table-wrapper">
-					     
-					   <div class="table-title">
-					     <div class="row">
-						     <div class="col-sm-6 p-0 flex justify-content-lg-start justify-content-center">
-							    <h2 class="ml-lg-2">Totals</h2>
-							 </div>
-							 <div class="col-sm-6 p-0 flex justify-content-lg-end justify-content-center">
-						
-							 
-							 </div>
-					     </div>
-					   </div>
-					   
-					
-						<div class="table-container">
-							<h4>Last 30 days</h4>
-<table>
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Load</th>
-            <th>Solar PV</th>
-            <th>Battery Charged</th>
-            <th>Battery Discharged</th>
-            <th>Grid Used</th>
-            <th>Grid Exported</th>
-        </tr>
-    </thead>
-    <tbody>
-        <% for (let i = data.loadPowerData.length - 1; i >= 1 && i >= data.loadPowerData.length - 30; i--) { %>
-            <tr>
-                <td><%= new Date(data.loadPowerData[i].time).toLocaleDateString() %></td>
-                <% if (data.loadPowerData[i-1].value !== 0) { %>
-                    <td><%= Math.abs(data.loadPowerData[i].value - data.loadPowerData[i-1].value).toFixed(1) %> kWh</td>
-                    <td><%= Math.abs(data.pvPowerData[i].value - data.pvPowerData[i-1].value).toFixed(1) %> kWh</td>
-                    <td><%= Math.abs(data.batteryStateOfChargeData[i].value - data.batteryStateOfChargeData[i-1].value).toFixed(1) %> kWh</td>
-                    <td><%= Math.abs(data.batteryPowerData[i].value - data.batteryPowerData[i-1].value).toFixed(1) %> kWh</td>
-                    <td><%= Math.abs(data.gridPowerData[i].value - data.gridPowerData[i-1].value).toFixed(1) %> kWh</td>
-                    <td><%= Math.abs(Math.max(0, (data.pvPowerData[i].value - data.loadPowerData[i].value + data.batteryPowerData[i].value) - (data.pvPowerData[i-1].value - data.loadPowerData[i-1].value + data.batteryPowerData[i-1].value))).toFixed(1) %> kWh</td>
-                <% } else { %>
-                    <td>0 kWh</td>
-                    <td>0 kWh</td>
-                    <td>0 kWh</td>
-                    <td>0 kWh</td>
-                    <td>0 kWh</td>
-                    <td>0 kWh</td>
-                <% } %>
-            </tr>
-        <% } %>
-    </tbody>
-</table>
-
-							
-							
+    <!-------page-content start----------->
+    <div id="content">
+        <!------top-navbar-start----------->
+        <div class="top-navbar">
+            <div class="xd-topbar">
+                <div class="row">
+                    <div class="col-2 col-md-1 col-lg-1 order-2 order-md-1 align-self-center">
+                        <div class="xp-menubar">
+                            <span class="material-icons text-white">signal_cellular_alt</span>
                         </div>
-					  </div>
+                    </div>
+                    <div class="col-md-5 col-lg-3 order-3 order-md-2"></div>
+                    <div class="col-10 col-md-6 col-lg-8 order-1 order-md-3">
+                        <div class="xp-profilebar text-right">
+                            <nav class="navbar p-0"></nav>
+                        </div>
+                    </div>
+                </div>
+                <div class="xp-breadcrumbbar text-center">
+                    <h4 class="page-title">Dashboard</h4>
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="#">Carbonoz</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        <!------top-navbar-end----------->
 
-						   <div class="chartCard">
-							<div class="chartBox">
-							  <canvas id="myChart"></canvas>
-							</div>
-						  </div>
-						  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
-						  <script>
-							// setup 
-							const influxDBEndpoint = 'http://192.168.160.55:8086/query?db=homeassistant&u=admin&p=adminadmin';
-						
-							async function fetchData() {
-							  const queries = [
-								`SELECT MEAN("value") AS "Power" FROM "state" WHERE time > now() - 30d AND "topic" = 'solar_assistant_DEYE/total/load_power/state' GROUP BY time(1d)`,
-								`SELECT MEAN("value") AS "Power" FROM "state" WHERE time > now() - 30d AND "topic" = 'solar_assistant_DEYE/total/grid_power/state' GROUP BY time(1d)`,
-								`SELECT MEAN("value") AS "Power" FROM "state" WHERE time > now() - 30d AND "topic" = 'solar_assistant_DEYE/total/pv_power/state' GROUP BY time(1d)`
-							  ];
-						
-							  const responses = await Promise.all(queries.map(async query => {
-								const response = await fetch(influxDBEndpoint, {
-								  method: 'POST',
-								  headers: {
-									'Content-Type': 'application/x-www-form-urlencoded'
-								  },
-								  body: `q=${encodeURIComponent(query)}`
-								});
-								return await response.json();
-							  }));
-						
-							  return responses.map(response => {
-								if (response.results && response.results[0] && response.results[0].series && response.results[0].series[0]) {
-								  return response.results[0].series[0].values;
-								}
-								return [];
-							  });
-							}
-						
-							async function renderChart() {
-							  try {
-								const dataSets = await fetchData();
-								const labels = dataSets[0].map(row => row[0]);
-								const datasets = {
-								  'Load Power': dataSets[0].map(row => row[1]),
-								  'Grid Power': dataSets[1].map(row => row[1]),
-								  'PV Power': dataSets[2].map(row => row[1])
-								};
-						
-								const chartData = {
-								  labels: labels,
-								  datasets: Object.keys(datasets).map(powerType => ({
-									label: powerType,
-									data: datasets[powerType],
-									backgroundColor: powerType === 'Load Power' ? 'rgba(54, 162, 235, 0.2)' :
-													 powerType === 'Grid Power' ? 'rgba(255, 99, 132, 0.2)' : 
-													 'rgba(255, 206, 86, 0.2)',
-									borderColor: powerType === 'Load Power' ? 'rgba(54, 162, 235, 1)' :
-												  powerType === 'Grid Power' ? 'rgba(255, 99, 132, 1)' : 
-												  'rgba(255, 206, 86, 1)',
-									borderWidth: 1
-								  }))
-								};
-						
-								const config = {
-								  type: 'bar',
-								  data: chartData,
-								  options: {
-									scales: {
-									  y: {
-										beginAtZero: true
-									  }
-									}
-								  }
-								};
-						
-								const ctx = document.getElementById('myChart').getContext('2d');
-								new Chart(ctx, config);
-							  } catch (error) {
-								console.error('Error:', error.message);
-							  }
-							}
-						
-							window.onload = renderChart;
-						
-							const chartVersion = document.getElementById('chartVersion');
-							chartVersion.innerText = Chart.version;
-						  </script>
-                       
-					   <h4>Last 12 months</h4>
-					   <table>
-						   <thead>
-							   <tr>
-								   <th>Month</th>
-								   <th>Load</th>
-								   <th>Solar PV</th>
-								   <th>Battery Charged</th>
-								   <th>Battery Discharged</th>
-								   <th>Grid Used</th>
-								   <th>Grid Exported</th>
-							   </tr>
-						   </thead>
-						   <tbody>
-							<% const today = new Date(); %>
-							<% for (let i = 0; i < 12; i++) { %>
-							  <% const monthStart = new Date(today.getFullYear(), today.getMonth() - i, 1); %>
-							  <% const monthEnd = new Date(today.getFullYear(), today.getMonth() - i + 1, 0); %>
-							  <% let load = 0, solarPV = 0, batteryCharged = 0, batteryDischarged = 0, gridUsed = 0, gridExported = 0; %>
-							  <% for (let j = data.loadPowerData.length - 1; j >= 0; j--) { %>
-								<% const date = new Date(data.loadPowerData[j].time); %>
-								<% if (date >= monthStart && date <= monthEnd) { %>
-								  <% load += data.loadPowerData[j].value ; %>
-								  <% solarPV += data.pvPowerData[j].value ; %>
-								  <% batteryCharged += data.batteryStateOfChargeData[j].value ;%>
-								  <% batteryDischarged += Math.abs((data.batteryPowerData[j].value)); %>
-								  <% gridUsed += Math.abs((data.gridPowerData[j].value)); %>
-								  <% gridExported += Math.abs((data.gridVoltageData[i].value)); %>
-								<% } %>
-							  <% } %>
-      <tr>
-        <td><%= monthStart.toLocaleString('default', { month: 'long', year: 'numeric' }) %></td>
-        <td><%= load.toFixed(1) %> kWh</td>
-        <td><%= solarPV.toFixed(1) %> kWh</td>
-        <td><%= batteryCharged.toFixed(1) %> kWh</td>
-        <td><%= batteryDischarged.toFixed(1) %> kWh</td>
-        <td><%= gridUsed.toFixed(1) %> kWh</td>
-        <td><%= gridExported.toFixed(1) %> kWh</td>
-      </tr>
-    <% } %>
-						   </tbody>
-					   </table>
-					   
+        <!------main-content-start----------->
+        <div class="main-content">
+            <div class="container-fluid">
+                
+                <div class="row">
+                    <div class="col-md-12">
 
-					     <!-- CSV Export Section -->
-					
-
-					  
-					
-						 <div class="export-section">
-							<button id="exportCSV">Export CSV</button>
-							<select id="timeSpanSelect">
-							  <option value="day">Last Day</option>
-							  <option value="week">Last Week</option>
-							  <option value="month" selected>Last Month</option>
-							</select>
-						  </div>		
-	
-
-					  
-					
-					
-				 
-			     </div>
-			  </div>
-		  
-		    <!------main-content-end-----------> 
-		  
-		 
-		 
-		 <!----footer-design------------->
-		 
-		 <footer class="footer">
-		    <div class="container-fluid">
-			   <div class="footer-in">
-			      <p class="mb-0">&copy 2024 Carbonoz . All Rights Reserved.</p>
-			   </div>
-			</div>
-		 </footer>
-		 
-		 
-		 
-		 
-	  </div>
-   
+                        <div class="container-xl">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="card card-body bg-light">
+                                        <h4 class="card-title">Today</h4>
+                                        <div class="card-text">
+                                            <h4>
+                                                <img src="https://www.svgrepo.com/download/293503/solar-panel.svg" class="img-fluid" alt="Solar Panel" width="50"/>
+                                                <span class="text-secondary">Solar PV Total:</span>
+                                                <span id="daily-solar-pv-total">Calculating...</span>
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card card-body bg-light">
+                                        <h4 class="card-title">Last 7 days</h4>
+                                        <div class="card-text">
+                                            <h4>
+                                                <img src="https://www.svgrepo.com/download/293503/solar-panel.svg" class="img-fluid" alt="Solar Panel" width="50"/>
+                                                <span class="text-secondary">Solar PV Total:</span>
+                                                <span id="weekly-solar-pv-total">Calculating...</span>
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card card-body bg-light">
+                                        <h4 class="card-title">Last 30 days</h4>
+                                        <div class="card-text">
+                                            <h4>
+                                                <img src="https://www.svgrepo.com/download/293503/solar-panel.svg" class="img-fluid" alt="Solar Panel" width="50"/>
+                                                <span class="text-secondary"> Solar PV Total:</span>
+                                                <span id="monthly-solar-pv-total">Calculating...</span>
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chartMenu">
+                            <p>Last 30 Days</p>
+                        </div>
+                        <div class="chartCard">
+                            <div class="chartBox">
+                                <canvas id="last-30-days-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-1">
+                    <div class="col-md-12">
+                        <div class="table-container">
+                            <table id="last30days-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Solar PV</th>
+                                        <th>Load</th> 
+                                        <th>Battery Charged</th>
+                                        <th>Battery Discharged</th>
+                                        <th>Grid Used</th>
+                                        <th>Grid Exported</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% for (let i = data.loadPowerData.length - 1; i >= 1 && i >= data.loadPowerData.length - 30; i--) { %>
+                                        <tr>
+                                            <!-- Display formatted date -->
+                                            <td><%= new Date(data.loadPowerData[i].time).toLocaleDateString('en-GB', { timeZone: 'Indian/Mauritius' }) %></td>
+                                            
+                                            <% 
+                                                let loadPowerDiff, pvPowerDiff, batteryStateOfChargeDiff, batteryPowerDiff, gridPowerDiff, netPVPowerDiff;
+                                                
+                                                if (data.loadPowerData[i-1].value === null || data.loadPowerData[i-1].value === 0) {
+                                                    loadPowerDiff = 0;
+                                                    pvPowerDiff = 0;
+                                                    batteryStateOfChargeDiff = 0;
+                                                    batteryPowerDiff = 0;
+                                                    gridPowerDiff = 0;
+                                                    netPVPowerDiff = 0;
+                                                } else {
+                                                    loadPowerDiff = data.loadPowerData[i].value >= data.loadPowerData[i-1].value ? (data.loadPowerData[i].value - data.loadPowerData[i-1].value).toFixed(1) : data.loadPowerData[i].value.toFixed(1);
+                                                    pvPowerDiff = data.pvPowerData[i].value >= data.pvPowerData[i-1].value ? (data.pvPowerData[i].value - data.pvPowerData[i-1].value).toFixed(1) : data.pvPowerData[i].value.toFixed(1);
+                                                    batteryStateOfChargeDiff = data.batteryStateOfChargeData[i].value >= data.batteryStateOfChargeData[i-1].value ? (data.batteryStateOfChargeData[i].value - data.batteryStateOfChargeData[i-1].value).toFixed(1) : data.batteryStateOfChargeData[i].value.toFixed(1);
+                                                    batteryPowerDiff = data.batteryPowerData[i].value >= data.batteryPowerData[i-1].value ? (data.batteryPowerData[i].value - data.batteryPowerData[i-1].value).toFixed(1) : data.batteryPowerData[i].value.toFixed(1);
+                                                    gridPowerDiff = data.gridPowerData[i].value >= data.gridPowerData[i-1].value ? (data.gridPowerData[i].value - data.gridPowerData[i-1].value).toFixed(1) : data.gridPowerData[i].value.toFixed(1);
+                                                    netPVPowerDiff = data.gridVoltageData[i].value >= data.gridVoltageData[i-1].value ? (data.gridVoltageData[i].value - data.gridVoltageData[i-1].value).toFixed(1) : data.gridVoltageData[i].value.toFixed(1);
+                                                }
+                                            %> 
+                                            <td><%= pvPowerDiff %> kWh</td>
+                                            <td><%= loadPowerDiff %> kWh</td>
+                                            <td><%= batteryStateOfChargeDiff %> kWh</td>
+                                            <td><%= batteryPowerDiff %> kWh</td>
+                                            <td><%= gridPowerDiff %> kWh</td>
+                                            <td><%= netPVPowerDiff %> kWh</td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                            <a id="last30days-table-download" class="btn btn-dark mt-3">Download CSV</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-1">
+                    <div class="col-md-12">
+                        <div class="chartMenu">
+                            <p>Last 12 Months</p>
+                        </div>
+                        <div class="chartCard">
+                            <div class="chartBox">
+                                <canvas id="last-12-months-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-1">
+                    <div class="col-md-12">
+                        <div class="table-container">
+                            <table id="last12months-table">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Solar PV</th>
+                                        <th>Load</th>
+                                        <th>Battery Charged</th>
+                                        <th>Battery Discharged</th>
+                                        <th>Grid Used</th>
+                                        <th>Grid Exported</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% 
+                                    let monthlyData = {};
+                                    let today = new Date();
+                                    
+                                    // Initialize the last 12 months
+                                    for (let i = 0; i < 12; i++) {
+                                        let date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                                        let monthKey = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                                        monthlyData[monthKey] = {
+                                            load: 0, solar: 0, batteryCharged: 0, 
+                                            batteryDischarged: 0, gridUsed: 0, gridExported: 0
+                                        };
+                                    }
+                        
+                                    // Sum up the data for each month using the same formula as in the 30-day table
+                                    for (let i = data.loadPowerData.length - 1; i >= 1 && i >= data.loadPowerData.length - 30; i--) {
+                                        let date = new Date(data.loadPowerData[i].time);
+                                        let monthKey = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                                        
+                                        if (monthlyData[monthKey]) {
+                                            let loadPowerDiff, pvPowerDiff, batteryStateOfChargeDiff, batteryPowerDiff, gridPowerDiff, netPVPowerDiff;
+                                            
+                                            if (data.loadPowerData[i-1].value === null || data.loadPowerData[i-1].value === 0) {
+                                                loadPowerDiff = 0;
+                                                pvPowerDiff = 0;
+                                                batteryStateOfChargeDiff = 0;
+                                                batteryPowerDiff = 0;
+                                                gridPowerDiff = 0;
+                                                netPVPowerDiff = 0;
+                                            } else {
+                                                loadPowerDiff = data.loadPowerData[i].value >= data.loadPowerData[i-1].value ? 
+                                                    (data.loadPowerData[i].value - data.loadPowerData[i-1].value) : data.loadPowerData[i].value;
+                                                pvPowerDiff = data.pvPowerData[i].value >= data.pvPowerData[i-1].value ? 
+                                                    (data.pvPowerData[i].value - data.pvPowerData[i-1].value) : data.pvPowerData[i].value;
+                                                batteryStateOfChargeDiff = data.batteryStateOfChargeData[i].value >= data.batteryStateOfChargeData[i-1].value ? 
+                                                    (data.batteryStateOfChargeData[i].value - data.batteryStateOfChargeData[i-1].value) : data.batteryStateOfChargeData[i].value;
+                                                batteryPowerDiff = data.batteryPowerData[i].value >= data.batteryPowerData[i-1].value ? 
+                                                    (data.batteryPowerData[i].value - data.batteryPowerData[i-1].value) : data.batteryPowerData[i].value;
+                                                gridPowerDiff = data.gridPowerData[i].value >= data.gridPowerData[i-1].value ? 
+                                                    (data.gridPowerData[i].value - data.gridPowerData[i-1].value) : data.gridPowerData[i].value;
+                                                netPVPowerDiff = data.gridVoltageData[i].value >= data.gridVoltageData[i-1].value ? 
+                                                    (data.gridVoltageData[i].value - data.gridVoltageData[i-1].value) : data.gridVoltageData[i].value;
+                                            }
+                        
+                                            monthlyData[monthKey].load += loadPowerDiff;
+                                            monthlyData[monthKey].solar += pvPowerDiff;
+                                            monthlyData[monthKey].batteryCharged += batteryStateOfChargeDiff;
+                                            monthlyData[monthKey].batteryDischarged += batteryPowerDiff;
+                                            monthlyData[monthKey].gridUsed += gridPowerDiff;
+                                            monthlyData[monthKey].gridExported += netPVPowerDiff;
+                                        }
+                                    }
+                        
+                                    // Display the data for each month
+                                    Object.keys(monthlyData).forEach(month => {
+                                        let data = monthlyData[month];
+                                    %>
+                                        <tr>
+                                            <td><%= month %></td>
+                                             <td><%= data.solar.toFixed(1) %> kWh</td>
+                                             <td><%= data.load.toFixed(1) %> kWh</td>
+                                            <td><%= data.batteryCharged.toFixed(1) %> kWh</td>
+                                            <td><%= data.batteryDischarged.toFixed(1) %> kWh</td>
+                                            <td><%= data.gridUsed.toFixed(1) %> kWh</td>
+                                            <td><%= data.gridExported.toFixed(1) %> kWh</td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                            <a id="last12months-table-download" class="btn btn-dark mt-3">Download CSV</a>
+                          
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!------main-content-end----------->
+    </div>
+    <!-------page-content end----------->
 </div>
 
-
-
-<!-------complete html----------->
-
-
-
-
-
-  
-     <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-   <script src="js/jquery-3.3.1.slim.min.js"></script>
-   <script src="js/popper.min.js"></script>
-   <script src="js/bootstrap.min.js"></script>
-   <script src="js/jquery-3.3.1.min.js"></script>
-  
-  
-  <script type="text/javascript">
-       $(document).ready(function(){
-	      $(".xp-menubar").on('click',function(){
-		    $("#sidebar").toggleClass('active');
-			$("#content").toggleClass('active');
-		  });
-		  
-		  $('.xp-menubar,.body-overlay').on('click',function(){
-		     $("#sidebar,.body-overlay").toggleClass('show-nav');
-		  });
-		  
-	   });
-
-
-
-	   const exportCSVBtn = document.getElementById('exportCSV');
-      const timeSpanSelect = document.getElementById('timeSpanSelect');
-
-      exportCSVBtn.addEventListener('click', () => {
-        const timeSpan = timeSpanSelect.value;
-        const url = `/api/csv-export?timeSpan=${timeSpan}`;
-
-        fetch(url)
-          .then(response => response.blob())
-          .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'data.csv';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-          })
-          .catch(error => console.error('Error exporting CSV:', error));
-      });
-  </script>
-  
-  
-
-
-  </body>
-  
-  </html>
-
+<script src="js/jquery-3.3.1.min.js"></script>
+<script src="js/popper.min.js"></script>
+<script src="js/bootstrap.min.js"></script>
+<script src="js/custom.js"></script>
+<script type="text/javascript">
+    $(document).ready(function(){
+       $(".xp-menubar").on('click',function(){
+         $("#sidebar").toggleClass('active');
+         $("#content").toggleClass('active');
+       });
+       
+       $('.xp-menubar,.body-overlay').on('click',function(){
+          $("#sidebar,.body-overlay").toggleClass('show-nav');
+       });
+       
+    });
+</script>
+</body>
+</html>
