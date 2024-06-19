@@ -45,6 +45,6 @@ WORKDIR /opt/app
 COPY . .
 RUN npm install
 
-EXPOSE 8000
+EXPOSE 6789
 
 CMD ["node", "server.js"]
