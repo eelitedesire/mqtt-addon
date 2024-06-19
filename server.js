@@ -5,17 +5,19 @@ const fs = require('fs');
 const path = require('path');
 const Influx = require('influx');
 const ejs = require('ejs');
+const moment = require('moment'); // Import moment library
 
 const app = express();
 const port = 6789;
 
+// Middleware setup
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.set('view engine', 'ejs');
 
+// Read configuration
 const configPath = '/data/options.json';
 let config;
-
 try {
     config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 } catch (error) {
@@ -23,54 +25,143 @@ try {
     process.exit(1);
 }
 
+// InfluxDB configuration
 const influxConfig = {
     host: '192.168.160.55',
     port: 8086,
-    database: 'homeassistant',
+    database: 'solarassistant',
     username: 'admin',
     password: 'adminadmin',
 };
-
 const influx = new Influx.InfluxDB(influxConfig);
+
+// MQTT configuration
 const mqttConfig = {
     host: config.mqtt_ip,
     port: config.mqtt_port,
     username: config.mqtt_username,
     password: config.mqtt_password,
 };
-
 let mqttClient;
-
 let incomingMessages = [];
 
-// Express routes
+// Connect to MQTT broker
+function connectToMqtt() {
+    mqttClient = mqtt.connect(`mqtt://${mqttConfig.host}:${mqttConfig.port}`, {
+        username: mqttConfig.username,
+        password: mqttConfig.password,
+    });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+    mqttClient.on('connect', () => {
+        console.log('Connected to MQTT broker');
+        mqttClient.subscribe('solar_assistant_DEYE/#');
+    });
 
-app.get('/automation', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'automation.html'));
-});
-app.get('/configuration', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'configuration.html'));
-});
+    mqttClient.on('message', (topic, message) => {
+        const formattedMessage = `${topic}: ${message.toString()}`;
+        incomingMessages.push(formattedMessage);
+        saveMessageToInfluxDB(topic, message);
+    });
 
-app.get('/charts', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'charts.html'));
-});
+    mqttClient.on('error', (err) => {
+        console.error('Error connecting to MQTT broker:', err.message);
+        mqttClient = null;
+    });
+}
 
-app.get('/status', (req, res) => {
-    if (mqttClient && mqttClient.connected) {
-        res.sendFile(path.join(__dirname, 'public', 'success.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'public', 'contact.html'));
+// Save MQTT message to InfluxDB
+function saveMessageToInfluxDB(topic, message) {
+    const parsedMessage = parseFloat(message.toString());
+    if (isNaN(parsedMessage)) return;
+
+    const timestamp = new Date().getTime();
+    const dataPoint = {
+        measurement: 'state',
+        fields: { value: parsedMessage },
+        tags: { topic },
+        timestamp: timestamp * 1000000,
+    };
+
+    influx.writePoints([dataPoint])
+        .catch((err) => {
+            console.error('Error saving message to InfluxDB:', err.toString());
+        });
+}
+
+
+// Fetch current value from InfluxDB
+async function getCurrentValue(topic) {
+    const query = `
+        SELECT mean("value") AS "value"
+        FROM "state"
+        WHERE "topic" = '${topic}'
+        AND time >= now() - 2d
+        GROUP BY time(1d) tz('Indian/Mauritius')
+    `;
+    try {
+        return await influx.query(query);
+    } catch (error) {
+        console.error(`Error querying InfluxDB for topic ${topic}:`, error.toString());
+        throw error;
     }
-});
+}
 
-app.get('/messages', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'messages.html'));
-});
+async function getCurrentData(topic) {
+    const query = `
+        SELECT last("value") AS "value"
+        FROM "state"
+        WHERE "topic" = '${topic}'
+        ORDER BY time DESC
+        LIMIT 1
+    `;
+
+    try {
+        const result = await influx.query(query);
+        return result[0];
+    } catch (error) {
+        console.error(`Error querying InfluxDB for topic ${topic}:`, error);
+        throw error;
+    }
+}
+
+// Fetch analytics data from InfluxDB
+async function queryInfluxDB(topic) {
+    const query = `
+        SELECT mean("value") AS "value"
+        FROM "state"
+        WHERE "topic" = '${topic}'
+        AND time >= now() - 30d
+        GROUP BY time(1d) tz('Indian/Mauritius')
+    `;
+    try {
+        return await influx.query(query);
+    } catch (error) {
+        console.error(`Error querying InfluxDB for topic ${topic}:`, error.toString());
+        throw error;
+    }
+}
+
+// Calculate daily difference
+function calculateDailyDifference(data) {
+    return data.map((current, index, array) => {
+        if (index === 0 || !array[index - 1].value) {
+            return { ...current, value: 0 };
+        } else {
+            const previousData = array[index - 1].value;
+            const currentData = current.value;
+            return currentData >= previousData
+                ? { ...current, value: currentData - previousData }
+                : { ...current };
+        }
+    });
+}
+
+// Route handlers
+app.get('/automation', (req, res) => res.sendFile(path.join(__dirname, 'public', 'automation.html')));
+app.get('/configuration', (req, res) => res.sendFile(path.join(__dirname, 'public', 'configuration.html')));
+app.get('/charts', (req, res) => res.sendFile(path.join(__dirname, 'public', 'charts.html')));
+app.get('/messages', (req, res) => res.sendFile(path.join(__dirname, 'public', 'messages.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 
 app.get('/api/messages', (req, res) => {
     const categoryFilter = req.query.category;
@@ -78,6 +169,45 @@ app.get('/api/messages', (req, res) => {
     res.json(filteredMessages);
 });
 
+app.get('/api/energy', async (req, res) => {
+    try {
+        const loadPowerData = await getCurrentValue('solar_assistant_DEYE/total/load_energy/state');
+        const pvPowerData = await getCurrentValue('solar_assistant_DEYE/total/pv_energy/state');
+        const batteryPowerInData = await getCurrentValue('solar_assistant_DEYE/total/battery_energy_in/state');
+        const batteryPowerOutData = await getCurrentValue('solar_assistant_DEYE/total/battery_energy_out/state');
+        const gridPowerInData = await getCurrentValue('solar_assistant_DEYE/total/grid_energy_in/state');
+        const gridPowerOutData = await getCurrentValue('solar_assistant_DEYE/total/grid_energy_out/state');
+
+        const loadPowerDataDaily = calculateDailyDifference(loadPowerData);
+        const pvPowerDataDaily = calculateDailyDifference(pvPowerData);
+        const batteryPowerInDataDaily = calculateDailyDifference(batteryPowerInData);
+        const batteryPowerOutDataDaily = calculateDailyDifference(batteryPowerOutData);
+        const gridPowerInDataDaily = calculateDailyDifference(gridPowerInData);
+        const gridPowerOutDataDaily = calculateDailyDifference(gridPowerOutData);
+
+        const hourlyData = loadPowerDataDaily.map((load, index) => ({
+            hour: moment(load.time).format('HH'), // Use moment library
+            load: load.value || 0,
+            solar: (pvPowerDataDaily[index] && pvPowerDataDaily[index].value) || 0,
+            battery: (batteryPowerOutDataDaily[index] && batteryPowerOutDataDaily[index].value) || 0,
+            grid: (gridPowerInDataDaily[index] && gridPowerInDataDaily[index].value) || 0
+        }));
+
+        const data = {
+            totalConsumption: loadPowerDataDaily.reduce((acc, load) => acc + (load.value || 0), 0),
+            solarProduction: pvPowerDataDaily.reduce((acc, pv) => acc + (pv.value || 0), 0),
+            gridIn: gridPowerInDataDaily.reduce((acc, grid) => acc + Math.max(grid.value || 0, 0), 0),gridOut: gridPowerOutDataDaily.reduce((acc, grid) => acc + Math.min(grid.value || 0, 0), 0),
+            batteryCharged: batteryPowerInDataDaily.reduce((acc, battery) => acc + Math.max(battery.value || 0, 0), 0),
+            batteryDischarged: batteryPowerOutDataDaily.reduce((acc, battery) => acc + Math.min(battery.value || 0, 0), 0),
+            hourlyData
+        };
+
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching energy data:', error);
+        res.status(500).send('Error fetching energy data');
+    }
+});
 
 app.get('/analytics', async (req, res) => {
     try {
@@ -88,12 +218,6 @@ app.get('/analytics', async (req, res) => {
         const gridPowerData = await queryInfluxDB('solar_assistant_DEYE/total/grid_energy_in/state');
         const gridVoltageData = await queryInfluxDB('solar_assistant_DEYE/total/grid_energy_out/state');
 
-        const solarPvTotalDaily = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'daily');
-        const solarPvTotalWeekly = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'weekly');
-        const solarPvTotalMonthly = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'monthly');
-
-        const gridVoltage = await getCurrentValue('solar_assistant_DEYE/total/grid_voltage/state');
-
         const data = {
             loadPowerData,
             pvPowerData,
@@ -101,51 +225,35 @@ app.get('/analytics', async (req, res) => {
             batteryPowerData,
             gridPowerData,
             gridVoltageData,
-            solarPvTotalDaily,
-            solarPvTotalWeekly,
-            solarPvTotalMonthly,
-            gridVoltage,
         };
 
         res.render('analytics', { data });
     } catch (error) {
-        console.error('Error fetching data from InfluxDB:', error);
-        res.status(500).send('Error fetching data from InfluxDB');
+        console.error('Error fetching analytics data from InfluxDB:', error);
+        res.status(500).send('Error fetching analytics data from InfluxDB');
     }
 });
 
-app.get('/energy', async (req, res) => {
+
+
+app.get('/', async (req, res) => {
     try {
-        const loadPowerData = await queryInfluxDB('solar_assistant_DEYE/total/load_power/state');
-        const solarProductionData = await queryInfluxDB('solar_assistant_DEYE/total/pv_power/state');
-        const energyStorageData = await queryInfluxDB('solar_assistant_DEYE/total/battery_power/state');
-        const gridImportData = await queryInfluxDB('solar_assistant_DEYE/total/grid_power/state');
-        const gridVoltagedata = await queryInfluxDB('solar_assistant_DEYE/total/grid_voltage/state');
 
-        const loadPower = await getCurrentValue('solar_assistant_DEYE/total/load_power/state');
-        const solarProduction = await getCurrentValue('solar_assistant_DEYE/total/pv_power/state');
-        const batteryStateOfCharge = await getCurrentValue('solar_assistant_DEYE/total/battery_state_of_charge/state');
-        const gridImport = await getCurrentValue('solar_assistant_DEYE/total/grid_power/state');
-        const gridVoltage = await getCurrentValue('solar_assistant_DEYE/total/grid_voltage/state');
+        const loadPower = await getCurrentData('solar_assistant_DEYE/total/load_power/state');
+        const solarProduction = await getCurrentData('solar_assistant_DEYE/total/pv_power/state');
+        const batteryStateOfCharge = await getCurrentData('solar_assistant_DEYE/total/battery_state_of_charge/state');
+        const gridImport = await getCurrentData('solar_assistant_DEYE/total/grid_power/state');
+        const gridVoltage = await getCurrentData('solar_assistant_DEYE/total/grid_voltage/state');
 
-        const solarPvTotalDaily = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'daily');
-        const solarPvTotalWeekly = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'weekly');
-        const solarPvTotalMonthly = await calculateTotalEnergy('solar_assistant_DEYE/total/pv_power/state', 'monthly');
 
         const data = {
-            loadPowerData,
-            solarProductionData,
-            energyStorageData,
-            gridImportData,
-            gridVoltagedata,
+          
             loadPower,
             solarProduction,
             batteryStateOfCharge,
             gridImport,
             gridVoltage,
-            solarPvTotalDaily,
-            solarPvTotalWeekly,
-            solarPvTotalMonthly,
+    
         };
 
         res.render('energy-dashboard', { data });
@@ -157,11 +265,11 @@ app.get('/energy', async (req, res) => {
 
 app.get('/api/realtime-data', async (req, res) => {
     try {
-        const loadPower = await getCurrentValue('solar_assistant_DEYE/total/load_power/state');
-        const solarProduction = await getCurrentValue('solar_assistant_DEYE/total/pv_power/state');
-        const batteryStateOfCharge = await getCurrentValue('solar_assistant_DEYE/total/battery_state_of_charge/state');
-        const gridImport = await getCurrentValue('solar_assistant_DEYE/total/grid_power/state');
-        const gridVoltage = await getCurrentValue('solar_assistant_DEYE/total/grid_voltage/state');
+        const loadPower = await getCurrentData('solar_assistant_DEYE/total/load_power/state');
+        const solarProduction = await getCurrentData('solar_assistant_DEYE/total/pv_power/state');
+        const batteryStateOfCharge = await getCurrentData('solar_assistant_DEYE/total/battery_state_of_charge/state');
+        const gridImport = await getCurrentData('solar_assistant_DEYE/total/grid_power/state');
+        const gridVoltage = await getCurrentData('solar_assistant_DEYE/total/grid_voltage/state');
 
         const data = {
             loadPower,
@@ -207,167 +315,3 @@ function getCategoryKeywords(category) {
             return [];
     }
 }
-
-function connectToMqtt() {
-    mqttClient = mqtt.connect(`mqtt://${mqttConfig.host}:${mqttConfig.port}`, {
-        username: mqttConfig.username,
-        password: mqttConfig.password,
-    });
-
-    mqttClient.on('connect', () => {
-        console.log('Connected to MQTT broker');
-        mqttClient.subscribe('solar_assistant_DEYE/#');
-    });
-
-    mqttClient.on('message', (topic, message) => {
-        const formattedMessage = `${topic}: ${message.toString()}`;
-        console.log(`Received message: ${formattedMessage}`);
-        incomingMessages.push(formattedMessage);
-        saveMessageToInfluxDB(topic, message);
-    });
-
-    mqttClient.on('error', (err) => {
-        console.error('Error connecting to MQTT broker:', err.message);
-        mqttClient = null;
-    });
-}
-
-function saveMessageToInfluxDB(topic, message) {
-    try {
-        const parsedMessage = parseFloat(message.toString());
-
-        if (isNaN(parsedMessage)) {
-            console.error('Error parsing message payload. Not a valid number:', message.toString());
-            return;
-        }
-
-        const timestamp = new Date().getTime();
-        const dataPoint = {
-            measurement: 'state',
-            fields: { value: parsedMessage },
-            tags: { topic: topic },
-            timestamp: timestamp * 1000000,
-        };
-
-        influx.writePoints([dataPoint])
-            .then(() => {
-                console.log('Message saved to InfluxDB');
-            })
-            .catch((err) => {
-                console.error('Error saving message to InfluxDB:', err.toString());
-            });
-    } catch (error) {
-        console.error('Error parsing message:', error.message);
-    }
-}
-
-async function queryInfluxDB(topic) {
-    const query = `
-        SELECT mean("value") AS "value"
-        FROM "state"
-        WHERE "topic" = '${topic}'
-        AND time >= now() - 30d
-        GROUP BY time(1d)
-    `;
-
-    try {
-        const result = await influx.query(query);
-        return result;
-    } catch (error) {
-        console.error(`Error querying InfluxDB for topic ${topic}:`, error);
-        throw error;
-    }
-}
-
-async function getCurrentValue(topic) {
-    const query = `
-        SELECT last("value") AS "value"
-        FROM "state"
-        WHERE "topic" = '${topic}'
-        ORDER BY time DESC
-        LIMIT 1
-    `;
-
-    try {
-        const result = await influx.query(query);
-        return result[0];
-    } catch (error) {
-        console.error(`Error querying InfluxDB for topic ${topic}:`, error);
-        throw error;
-    }
-}
-
-async function calculateTotalEnergy(topic, period) {
-    let timeRange;
-    switch (period) {
-        case 'daily':
-            timeRange = '1d';
-            break;
-        case 'weekly':
-            timeRange = '7d';
-            break;
-        case 'monthly':
-            timeRange = '30d';
-            break;
-        default:
-            throw new Error('Invalid period');
-    }
-
-    const query = `
-        SELECT mean("value") AS "total"
-        FROM "state"
-        WHERE "topic" = '${topic}'
-        AND time >= now() - ${timeRange}
-    `;
-
-    try {
-        const result = await influx.query(query);
-        return result[0].total;
-    } catch (error) {
-        console.error(`Error querying InfluxDB for topic ${topic}:`, error);
-        throw error;
-    }
-}
-
-app.get('/api/csv-export', async (req, res) => {
-    const timeSpan = req.query.timeSpan || 'month';
-
-    try {
-        const loadPowerData = await queryInfluxDB('solar_assistant_DEYE/total/load_power/state', timeSpan);
-        const solarProductionData = await queryInfluxDB('solar_assistant_DEYE/total/pv_power/state', timeSpan);
-        const energyStorageData = await queryInfluxDB('solar_assistant_DEYE/total/battery_power/state', timeSpan);
-        const gridImportData = await queryInfluxDB('solar_assistant_DEYE/total/grid_power/state', timeSpan);
-        const gridVoltagedata = await queryInfluxDB('solar_assistant_DEYE/total/grid_voltage/state', timeSpan);
-
-        const csvData = [
-            ['Timestamp', 'Load Power', 'Solar Production', 'Energy Storage', 'Grid Import', 'Grid Voltage'].join(',')
-        ];
-
-        const minLength = Math.min(
-            loadPowerData.length,
-            solarProductionData.length,
-            energyStorageData.length,
-            gridImportData.length,
-            gridVoltagedata.length
-        );
-
-        for (let i = 0; i < minLength; i++) {
-            const timestamp = new Date(loadPowerData[i].time).toISOString();
-            const loadPower = loadPowerData[i].value;
-            const solarProduction = solarProductionData[i].value;
-            const energyStorage = energyStorageData[i].value;
-            const gridImport = gridImportData[i].value;
-            const gridVoltage = gridVoltagedata[i].value;
-
-            csvData.push([timestamp, loadPower, solarProduction, energyStorage, gridImport, gridVoltage].join(','));
-        }
-
-        const csvContent = csvData.join('\n');
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=data.csv');
-        res.send(csvContent);
-    } catch (error) {
-        console.error('Error exporting CSV:', error);
-        res.status(500).send('Error exporting CSV');
-    }
-});
