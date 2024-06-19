@@ -70,22 +70,28 @@ function connectToMqtt() {
 }
 
 // Save MQTT message to InfluxDB
-function saveMessageToInfluxDB(topic, message) {
-    const parsedMessage = parseFloat(message.toString());
-    if (isNaN(parsedMessage)) return;
+async function saveMessageToInfluxDB(topic, message) {
+    try {
+        const parsedMessage = parseFloat(message.toString());
 
-    const timestamp = new Date().getTime();
-    const dataPoint = {
-        measurement: 'state',
-        fields: { value: parsedMessage },
-        tags: { topic },
-        timestamp: timestamp * 1000000,
-    };
+        if (isNaN(parsedMessage)) {
+           
+            return;
+        }
 
-    influx.writePoints([dataPoint])
-        .catch((err) => {
-            console.error('Error saving message to InfluxDB:', err.toString());
-        });
+        const timestamp = new Date().getTime();
+        const dataPoint = {
+            measurement: 'state',
+            fields: { value: parsedMessage },
+            tags: { topic: topic },
+            timestamp: timestamp * 1000000,
+        };
+
+        await influx.writePoints([dataPoint]);
+        // console.log('Message saved to InfluxDB');
+    } catch (error) {
+        console.error('Error saving message to InfluxDB:', error.toString());
+    }
 }
 
 
