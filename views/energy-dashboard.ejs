@@ -358,34 +358,20 @@
   </div>
 </div>
 
-      <!-- Solar PV Totals -->
+ 
       
-      <div class="cards">
-        <div class="card-contents">
-          <h2>Solar PV Totals</h2>
-          <div class="row mb-3">
-            <div class="col-4"style="margin-left: 25px; margin-right: 25px;">
-              <h3>Daily</h3>
-              <div class="value"><%= (data.solarPvTotalDaily/100).toFixed(1) %> kWh</div>
-            </div>
-            <div class="col-4" style="margin-left: 25px; margin-right: 25px;">
-              <h3>Weekly</h3>
-              <div class="value"><%= (data.solarPvTotalWeekly/10 ).toFixed(1)%> kWh</div>
-            </div>
-            <div class="col-4"style="margin-left: 25px; margin-right: 25px;">
-              <h3>Monthly</h3>
-              <div class="value"><%= (data.solarPvTotalMonthly).toFixed(1) %> kWh</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </main>
 					
 					
 									
 	
-
+<!-- Charts -->
+<div class="chart-container">
+    <canvas id="energyChart"></canvas>
+</div>
+<div class="chart-container">
+    <canvas id="batteryChart"></canvas>
+</div>
 					  
 					
 					
@@ -429,62 +415,222 @@
    <script src="js/popper.min.js"></script>
    <script src="js/bootstrap.min.js"></script>
    <script src="js/jquery-3.3.1.min.js"></script>
+
+   <script src="js/jquery-3.3.1.slim.min.js"></script>
+   <script src="js/popper.min.js"></script>
+   <script src="js/bootstrap.min.js"></script>
+   <script src="js/jquery-3.3.1.min.js"></script>
+   <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
   
-  
-  <script type="text/javascript">
-       $(document).ready(function(){
-	      $(".xp-menubar").on('click',function(){
-		    $("#sidebar").toggleClass('active');
-			$("#content").toggleClass('active');
-		  });
-		  
-		  $('.xp-menubar,.body-overlay').on('click',function(){
-		     $("#sidebar,.body-overlay").toggleClass('show-nav');
-		  });
-		  
-	   });
-  </script>
-  
-  <script src="/js/home-assistant-energy-usage-card.js"></script>
-  <script src="/js/home-assistant-battery-storage-card.js"></script>
-  <script>
-    function updateRealTimeData() {
-      fetch('/api/realtime-data')
-        .then(response => response.json())
-        .then(data => {
-          // Update the circle progress bars with the new data
-          updateCircleProgress('.solar-production', data.solarProduction, '#06ccff');
-          updateCircleProgress('.battery-state-of-charge', data.batteryStateOfCharge, '#ff00be');
-          updateCircleProgress('.grid-import', data.gridImport, '#fee800');
-          updateCircleProgress('.load-power', data.loadPower, '#00ffae');
-          updateCircleProgress('.grid-voltage', data.gridVoltage, '#ffa500'); 
-          
-        })
-        .catch(error => {
-          console.error('Error fetching real-time data:', error);
+<script>
+    $(document).ready(function () {
+        $(".xp-menubar").on('click', function () {
+            $("#sidebar").toggleClass('active');
+            $("#content").toggleClass('active');
         });
+
+        $('.xp-menubar,.body-overlay').on('click', function () {
+            $("#sidebar,.body-overlay").toggleClass('show-nav');
+        });
+    });
+
+    function updateRealTimeData() {
+        fetch('/api/realtime-data')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Fetched Data:', data);
+
+                updateCircleProgress('.solar-production', data.solarProduction, '#06ccff');
+                updateCircleProgress('.battery-state-of-charge', data.batteryStateOfCharge, '#ff00be');
+                updateCircleProgress('.grid-import', data.gridImport, '#fee800');
+                updateCircleProgress('.load-power', data.loadPower, '#00ffae');
+                updateCircleProgress('.grid-voltage', data.gridVoltage, '#ffa500');
+
+                // Update charts with fetched data
+                updateChartsWithData(data);
+            })
+            .catch(error => {
+                console.error('Error fetching real-time data:', error);
+            });
     }
-  
+
     function updateCircleProgress(selector, data, color) {
-      const progressElement = document.querySelector(`${selector} .progress`);
-      const valueElement = document.querySelector(`${selector} .value`);
-      const iconElement = document.querySelector(`${selector} .icon`);
-  
-      // Update the progress bar width and value
-      progressElement.style.strokeDashoffset = 565.48 - (565.48 * (data.value / 1000));
-      progressElement.style.stroke = color;
-      iconElement.style.color = color;
-      valueElement.textContent = `${data.value.toFixed(2)} ${selector === '.grid-voltage' ? 'V' : 'W'}`;
+        const progressElement = document.querySelector(`${selector} .progress`);
+        const valueElement = document.querySelector(`${selector} .value`);
+        const iconElement = document.querySelector(`${selector} .icon`);
+
+        const maxValue = selector === '.grid-voltage' ? 500 : 1000; // Maximum value for grid voltage and other metrics
+        const progress = (data.value / maxValue) * 100;
+
+        progressElement.style.strokeDashoffset = 565.48 - (565.48 * progress / 100);
+        progressElement.style.stroke = color;
+        iconElement.style.color = color;
+        valueElement.textContent = `${data.value.toFixed(2)} ${selector === '.grid-voltage' ? 'V' : 'W'}`;
     }
-  
-    // Update the real-time data every 5 seconds
-    setInterval(updateRealTimeData, 5000);
-  </script>
-  
 
+    const energyChartContext = document.getElementById('energyChart').getContext('2d');
+      const batteryChartContext = document.getElementById('batteryChart').getContext('2d');
 
+      const energyChart = new Chart(energyChartContext, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Load Power',
+              borderColor: '#00ffae',
+              data: [],
+              fill: false,
+            },
+            {
+              label: 'Grid Power',
+              borderColor: '#fee800',
+              data: [],
+              fill: false,
+            },
+            {
+              label: 'Solar PV',
+              borderColor: '#06ccff',
+              data: [],
+              fill: false,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Load Power, Grid Power, and Solar PV',
+            },
+            annotation: {
+              annotations: [
+                {
+                  type: 'line',
+                  mode: 'horizontal',
+                  scaleID: 'y',
+                  value: 500, // The value for the horizontal line
+                  borderColor: 'rgba(0, 0, 0, 0.5)', // Line color
+                  borderWidth: 2, // Line width
+                  label: {
+                    content: 'Target Value', // Label text
+                    enabled: true, // Show label
+                    position: 'start', // Label position
+                  },
+                },
+              ],
+            },
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Power (W)'
+              },
+              suggestedMax: 1000, // Set the maximum value for the y-axis
+            }
+          }
+        }
+      });
+
+      const batteryChart = new Chart(batteryChartContext, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: 'Battery',
+        data: [],
+        fill: false,
+        backgroundColor: (context) => {
+          const value = context.dataset.data[context.dataIndex];
+          return getColorForValue(value);
+        },
+        borderColor: (context) => {
+          const value = context.dataset.data[context.dataIndex];
+          return getColorForValue(value);
+        },
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      title: {
+        display: true,
+        text: 'Battery State of Charge',
+      },
+    },
+    scales: {
+      x: {
+        display: true,
+        title: {
+          display: true,
+          text: 'Time'
+        }
+      },
+      y: {
+        display: true,
+        title: {
+          display: true,
+          text: 'Charge (%)'
+        },
+        suggestedMax: 100,
+      }
+    }
+  }
+});
+
+function getColorForValue(value) {
+  if (value < 20) {
+    return '#ff0000'; // Red for values below 20%
+  } else if (value < 40) {
+    return '#ffa500'; // Orange for values between 20% and 40%
+  } else {
+    return '#00ff00'; // Green for values above 40%
+  }
+}
+
+function updateChartsWithData(data) {
+  const currentTimestamp = new Date().toLocaleString();
+
+  // Update battery chart
+  batteryChart.data.labels.push(currentTimestamp);
+  batteryChart.data.datasets[0].data.push(data.batteryStateOfCharge);
+  batteryChart.update();
+}
+
+      function updateChartsWithData(data) {
+        const currentTimestamp = new Date().toLocaleString();
+
+        // Update energy chart
+        energyChart.data.labels.push(currentTimestamp);
+        energyChart.data.datasets[0].data.push(data.loadPower);
+        energyChart.data.datasets[1].data.push(data.gridPower);
+        energyChart.data.datasets[2].data.push(data.solarProductionData);
+        energyChart.update();
+
+        // Update battery chart
+        batteryChart.data.labels.push(currentTimestamp);
+        batteryChart.data.datasets[0].data.push(data.batteryStateOfCharge);
+        batteryChart.update();
+      }
+
+      // Update real-time data every 5 seconds
+      setInterval(updateRealTimeData, 5000);
+    </script>
   </body>
   
   </html>
-
-
